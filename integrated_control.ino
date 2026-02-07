@@ -55,6 +55,6 @@ void loop() {
       //Serial.println("Unknown command. Try: forward / backward / left / right / stop");
       Motor_Move(0,0);
     }
-    Serial.println("CE\n");
+    //Serial.println("CE\n");
   }
 }
