@@ -62,8 +62,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 print("Y")
                 break  # Yet another action
             else:
+                print("None")
                 conn.sendall(b'stop\n')
 
-            time.sleep(0.1)
+            time.sleep(0.015)
             
             #conn.sendall(b"Hello")
