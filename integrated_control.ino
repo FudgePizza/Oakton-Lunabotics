@@ -3,7 +3,8 @@
 Servo Motor1;
 //Servo Motor2;
 //Servo Motor3;
-//Servo Motor4; 
+//Servo Motor4;
+int spd = 100;
 
 void Motor_Move(int leftSpd, int rightSpd){
   rightSpd = constrain(rightSpd, -500,500);
@@ -22,30 +23,31 @@ void setup() {
   //Motor2.attach(9); 
   //Motor3.attach(10); 
   //Motor4.attach(11); //Motor Initializes
+
 }
 
 void loop() {
   // Check if there’s data in the serial buffer
   if (Serial.available() > 0) {
-    Serial.println("\n");
+    
     String command = Serial.readStringUntil('\n');  // Read until newline
     command.trim(); // Remove spaces or line breaks
 
     if (command.equalsIgnoreCase("forward")) {
       //Serial.println("Moving forward...");
-      Motor_Move(100, 100);  // Both sides forward
+      Motor_Move(spd, spd);  // Both sides forward
 
     } else if (command.equalsIgnoreCase("backward")) {
       //Serial.println("Moving backward...");
-      Motor_Move(-100, -100);  // Both sides reverse
+      Motor_Move(-1*spd, -1*spd);  // Both sides reverse
 
     } else if (command.equalsIgnoreCase("left")) {
       //Serial.println("Turning left...");
-      Motor_Move(-200, 200);  // Left motors reverse, right motors forward
+      Motor_Move(-1*spd, spd);  // Left motors reverse, right motors forward
 
     } else if (command.equalsIgnoreCase("right")) {
       //Serial.println("Turning right...");
-      Motor_Move(200, -200);  // Left forward, right reverse
+      Motor_Move(spd, -1*spd);  // Left forward, right reverse
 
     } else if (command.equalsIgnoreCase("stop") or command.equalsIgnoreCase("none")) {
       //Serial.println("Stopping...");
@@ -55,6 +57,6 @@ void loop() {
       //Serial.println("Unknown command. Try: forward / backward / left / right / stop");
       Motor_Move(0,0);
     }
-    //Serial.println("CE\n");
+    
   }
 }
