@@ -4,7 +4,7 @@ Servo Motor1;
 //Servo Motor2;
 //Servo Motor3;
 //Servo Motor4;
-int spd = 100;
+int spd = 200;
 
 void Motor_Move(int leftSpd, int rightSpd){
   rightSpd = constrain(rightSpd, -500,500);
