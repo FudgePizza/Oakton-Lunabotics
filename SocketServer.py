@@ -58,6 +58,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 print("B")   # Toggle some feature
             elif x_button:
                 print("X")   # Another action
+                conn.sendall(b'dig\n')
             elif y_button:
                 print("Y")
                 break  # Yet another action
