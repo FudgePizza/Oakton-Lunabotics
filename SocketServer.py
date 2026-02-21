@@ -64,7 +64,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 break  # Yet another action
             else:
                 print("None")
-                conn.sendall(b'stop\n')
+                #conn.sendall(b'stop\n')
 
             time.sleep(0.015)
             
