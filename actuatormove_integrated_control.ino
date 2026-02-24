@@ -9,7 +9,7 @@ Servo Motor1;
 
 //Servo Actuator1;
 //Servo Actuator2;
-//Servo Actuator3;
+
 int spd = 500;
 float spdOfActuator = 0.05; //in/s
 int dig = 1; 
@@ -60,7 +60,7 @@ void setup() {
   Motor1.attach(8);
   pinMode(2,INPUT); // Hall effect sensor of Actuator 1
   pinMode(3,INPUT); // Hall effect sensor of Actuator 2
-  pinMode(4,INPUT); // Hall effect sensor of Actuator 3
+  
   
 
   //Motor2.attach(9); 
