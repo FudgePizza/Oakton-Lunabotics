@@ -1,39 +1,48 @@
 #include <Servo.h>
+#include <math.h>
 
+class Actuator { // The class keyword defines a class named Car
+  public:    // Access specifier - members are accessible from outside the class
+    Servo actuator;
+    float pos;
+    int pin;
+};
 
+Actuator actuator1;
 
-Servo Actuator1;
 
 int spd = 500;
 float spdOfActuator = 0.05; //in/s
 int dig = 1; 
 volatile long stepCount = 0;
-float pulsesPerIn = 441.96;
+float pulsesPerIn = 1043.94;
 
 
 
-void actuatorMove(Servo &act, int sensorPin, float dis){ 
-  int direction = (dis > 0) ? 1 : -1;
+void actuatorMove(Actuator &act, float pos){ 
+  float dis = pos - act.pos;
+  int direction = (dis > 0) ? -1 : 1;
   int aSpd = (constrain(spd, -500,500))* (direction);
   aSpd += 1500;
   stepCount = 0;
-  long pulsesNeeded = (long)(abs(dis)*pulsesPerIn); 
-  attachInterrupt(digitalPinToInterrupt(sensorPin), countSteps, RISING);
+  long pulsesNeeded = (long)(fabs(dis)*pulsesPerIn); 
+  attachInterrupt(digitalPinToInterrupt(act.pin), countSteps, RISING);
   unsigned long start = millis();
-  act.writeMicroseconds(aSpd);
+  act.actuator.writeMicroseconds(aSpd);
   while(true){
     noInterrupts();
     long steps = stepCount;
     interrupts();
 
     if (steps >= pulsesNeeded) break;
-    if (millis() - start > 5000) break;
+    if (millis() - start > 10000) break;
     
     delayMicroseconds(100);
     
   }
-  act.writeMicroseconds(1500);
-  detachInterrupt(digitalPinToInterrupt(sensorPin));
+  act.pos += -1 * direction* (stepCount/pulsesPerIn);
+  act.actuator.writeMicroseconds(1500);
+  detachInterrupt(digitalPinToInterrupt(act.pin));
 } 
 
 void countSteps() {
@@ -44,9 +53,12 @@ void countSteps() {
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
-  pinMode(2,INPUT); // Hall effect sensor of Actuator 1
-  Actuator1.attach(12);
-
+  actuator1.pos = 0.0;
+  actuator1.pin = 2;
+  pinMode(actuator1.pin,INPUT); // Hall effect sensor of Actuator 1
+  actuator1.actuator.attach(12);
+  actuatorMove(actuator1,-12)
+  actuator1.pos = 0;
 }
 
 void loop() {
@@ -60,25 +72,28 @@ void loop() {
       //Serial.println("Stopping...");
       if(dig == 1){
         dig = 2;
-        actuatorMove(Actuator1, 2, 3.0);
+        actuatorMove(actuator1, 3);
         // move actuators as needed
       } else if(dig == 2){
         dig = 1; 
-        actuatorMove(Actuator1, 2, -3.0);
+        actuatorMove(actuator1, -3);
         //move actuators as needed
       }
 
     }
      else if (command.equalsIgnoreCase("stop") || command.equalsIgnoreCase("none")) {
       //Serial.println("Stopping...");
-      Motor_Move(0, 0);  // Stop all motors
+        // Stop all motors
 
     }
     
      else {
       //Serial.println("Unknown command. Try: forward / backward / left / right / stop");
-      Motor_Move(0,0);
+      
     }
+    
+  }
+}
     
   }
 }
