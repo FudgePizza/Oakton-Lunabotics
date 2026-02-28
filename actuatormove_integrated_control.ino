@@ -26,7 +26,7 @@ void Actuator_Move(Servo act, int dis, int dc){ //dc is dig constant time for wh
   delay((time*1000)+dc);
 } 
 
-void actuatorMove(Servo &act, int dis, int sensorPin){ 
+void actuatorMove(Servo &act, int sensorPin, int dis){ 
   int direction = (dis > 0) ? 1 : -1;
   int aSpd = (constrain(spd, -500,500))* (direction);
   aSpd += 1500;
