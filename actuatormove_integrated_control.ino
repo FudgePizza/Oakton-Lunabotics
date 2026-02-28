@@ -18,15 +18,7 @@ float pulsesPerIn = 1043.94;
 
 
 
-void Actuator_Move(Servo act, int dis, int dc){ //dc is dig constant time for when bucket is slowed due to digging
-  int aSpd = constrain(spd, -500,500);
-  aSpd += 1500;
-  float time = dis/spdOfActuator; 
-  act.writeMicroseconds(aSpd);
-  delay((time*1000)+dc);
-} 
-
-void actuatorMove(Servo &act, int sensorPin, int dis){ 
+void actuatorMove(Servo &act, int sensorPin, float dis){ 
   int direction = (dis > 0) ? 1 : -1;
   int aSpd = (constrain(spd, -500,500))* (direction);
   aSpd += 1500;
