@@ -12,7 +12,7 @@ float pulsesPerIn = 441.96;
 
 
 
-void actuatorMove(Servo &act, int sensorPin, int dis){ 
+void actuatorMove(Servo &act, int sensorPin, float dis){ 
   int direction = (dis > 0) ? 1 : -1;
   int aSpd = (constrain(spd, -500,500))* (direction);
   aSpd += 1500;
@@ -60,11 +60,11 @@ void loop() {
       //Serial.println("Stopping...");
       if(dig == 1){
         dig = 2;
-        actuatorMove(Actuator1, 2, 3);
+        actuatorMove(Actuator1, 2, 3.0);
         // move actuators as needed
       } else if(dig == 2){
         dig = 1; 
-        actuatorMove(Actuator1, 2, -3);
+        actuatorMove(Actuator1, 2, -3.0);
         //move actuators as needed
       }
 
