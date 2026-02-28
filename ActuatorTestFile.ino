@@ -8,7 +8,7 @@ int spd = 500;
 float spdOfActuator = 0.05; //in/s
 int dig = 1; 
 volatile long stepCount = 0;
-float pulsesPerIn = 1043.94;
+float pulsesPerIn = 441.96;
 
 
 
