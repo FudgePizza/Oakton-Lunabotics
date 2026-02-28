@@ -1,47 +1,56 @@
 #include <Servo.h>
+#include <math.h>
 
+class Actuator { // The class keyword defines a class named Car
+  public:    // Access specifier - members are accessible from outside the class
+    Servo actuator;
+    float pos;
+    int pin;
+};
 
+Actuator actuator1;
+//Actuator actuator2;
 Servo Motor1;
-
 //Servo Motor2;
 //Servo Motor3;
 //Servo Motor4;
 
-//Servo Actuator1;
-//Servo Actuator2;
 
 int spd = 500;
 float spdOfActuator = 0.05; //in/s
 int dig = 1; 
 volatile long stepCount = 0;
-float pulsesPerIn = 1043.94;
+float pulsesPerIn = 441.9;
 
-
-
-void actuatorMove(Servo &act, int sensorPin, float dis){ 
+void actuatorMove(Actuator &act, float pos){ 
+  float dis = pos - act.pos;
   int direction = (dis > 0) ? 1 : -1;
   int aSpd = (constrain(spd, -500,500))* (direction);
   aSpd += 1500;
   stepCount = 0;
-  long pulsesNeeded = (long)(abs(dis)*pulsesPerIn); 
-  attachInterrupt(digitalPinToInterrupt(sensorPin), countSteps, RISING);
+  long pulsesNeeded = (long)(fabs(dis)*pulsesPerIn); 
+  attachInterrupt(digitalPinToInterrupt(act.pin), countSteps, RISING);
   unsigned long start = millis();
-  act.writeMicroseconds(aSpd);
+  act.actuator.writeMicroseconds(aSpd);
   while(true){
     noInterrupts();
     long steps = stepCount;
     interrupts();
 
     if (steps >= pulsesNeeded) break;
-    if (millis() - start > 5000) break;
+    if (millis() - start > 15000) break;
     
     delayMicroseconds(100);
     
   }
-  act.writeMicroseconds(1500);
-  detachInterrupt(digitalPinToInterrupt(sensorPin));
+  act.pos += direction* (stepCount/pulsesPerIn);
+  act.actuator.writeMicroseconds(1500);
+  detachInterrupt(digitalPinToInterrupt(act.pin));
 } 
 
+void countSteps() {
+  stepCount++;
+}
 
 void Motor_Move(int leftSpd, int rightSpd){
   rightSpd = constrain(rightSpd, -500,500);
@@ -52,25 +61,26 @@ void Motor_Move(int leftSpd, int rightSpd){
   //Motor2.writeMicroseconds(rightSpd);
   
 }
-void countSteps() {
-  stepCount++;
-}
 
 void setup() {
+  // put your setup code here, to run once:
   Serial.begin(9600);
-  
-  Motor1.attach(8);
-  pinMode(2,INPUT); // Hall effect sensor of Actuator 1
-  pinMode(3,INPUT); // Hall effect sensor of Actuator 2
-  
-  
+  actuator1.pin = 2;
+  pinMode(actuator1.pin,INPUT); // Hall effect sensor of Actuator 1
+  actuator1.actuator.attach(12);
+  actuatorMove(actuator1,-12);
+  actuator1.pos = 0;
 
-  //Motor2.attach(9); 
-  //Motor3.attach(10); 
-  //Motor4.attach(11); //Motor Initializes
-  //Actuator1.attach(12);
-  //Actuator2.attach(13);
+  actuator2.pin = 3;
+  pinMode(actuator2.pin,INPUT); // Hall effect sensor of Actuator 2
+  actuator2.actuator.attach(11);
+  actuatorMove(actuator2,-12);
+  actuator2.pos = 0;
 
+  Motor1.attach(10);
+  //Motor2.attach(9);
+  //Motor3.attach(8);
+  //Motor4.attach(7);
 }
 
 void loop() {
