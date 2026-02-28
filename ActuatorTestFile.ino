@@ -15,13 +15,13 @@ int spd = 500;
 float spdOfActuator = 0.05; //in/s
 int dig = 1; 
 volatile long stepCount = 0;
-float pulsesPerIn = 1043.94;
+float pulsesPerIn = 441.9;
 
 
 
 void actuatorMove(Actuator &act, float pos){ 
   float dis = pos - act.pos;
-  int direction = (dis > 0) ? -1 : 1;
+  int direction = (dis > 0) ? 1 : -1;
   int aSpd = (constrain(spd, -500,500))* (direction);
   aSpd += 1500;
   stepCount = 0;
@@ -35,12 +35,12 @@ void actuatorMove(Actuator &act, float pos){
     interrupts();
 
     if (steps >= pulsesNeeded) break;
-    if (millis() - start > 10000) break;
+    if (millis() - start > 15000) break;
     
     delayMicroseconds(100);
     
   }
-  act.pos += -1 * direction* (stepCount/pulsesPerIn);
+  act.pos += direction* (stepCount/pulsesPerIn);
   act.actuator.writeMicroseconds(1500);
   detachInterrupt(digitalPinToInterrupt(act.pin));
 } 
@@ -57,7 +57,7 @@ void setup() {
   actuator1.pin = 2;
   pinMode(actuator1.pin,INPUT); // Hall effect sensor of Actuator 1
   actuator1.actuator.attach(12);
-  actuatorMove(actuator1,-12)
+  actuatorMove(actuator1,-12);
   actuator1.pos = 0;
 }
 
@@ -72,11 +72,11 @@ void loop() {
       //Serial.println("Stopping...");
       if(dig == 1){
         dig = 2;
-        actuatorMove(actuator1, 3);
+        actuatorMove(actuator1, 4.0);
         // move actuators as needed
       } else if(dig == 2){
         dig = 1; 
-        actuatorMove(actuator1, -3);
+        actuatorMove(actuator1, 2.0);
         //move actuators as needed
       }
 
@@ -95,5 +95,4 @@ void loop() {
   }
 }
     
-  }
-}
+  
