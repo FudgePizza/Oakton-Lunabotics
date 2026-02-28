@@ -27,14 +27,24 @@ void Actuator_Move(Servo act, int dis, int dc){ //dc is dig constant time for wh
 } 
 
 void actuator_Move(Servo &act, int dis, int sensorPin){ 
-  int aSpd = constrain(spd, -500,500);
+  int direction = (dis > 0) ? 1 : -1;
+  int aSpd = (constrain(spd, -500,500))* (direction);
   aSpd += 1500;
   stepCount = 0;
-  long pulsesNeeded = (long)(dis*pulsesPerIn); 
+  long pulsesNeeded = (long)(abs(dis)*pulsesPerIn); 
   attachInterrupt(digitalPinToInterrupt(sensorPin), countSteps, RISING);
-  while(stepCount <= pulsesNeeded){
-    act.writeMicroseconds(aSpd);
+  unsigned long start = millis();
+  act.writeMicroseconds(aSpd);
+  while(true){
+    noInterrupts();
+    long steps = stepCount;
+    interrupts();
+
+    if (steps >= pulsesNeeded) break;
     if (millis() - start > 5000) break;
+    
+    delayMicroseconds(100);
+    
   }
   act.writeMicroseconds(1500);
   detachInterrupt(digitalPinToInterrupt(sensorPin));
