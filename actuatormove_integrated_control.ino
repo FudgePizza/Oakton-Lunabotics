@@ -68,13 +68,19 @@ void setup() {
   actuator1.pin = 2;
   pinMode(actuator1.pin,INPUT); // Hall effect sensor of Actuator 1
   actuator1.actuator.attach(12);
-  actuatorMove(actuator1,-12);
-  actuator1.pos = 0;
+  
+ 
 
   actuator2.pin = 3;
   pinMode(actuator2.pin,INPUT); // Hall effect sensor of Actuator 2
   actuator2.actuator.attach(11);
-  actuatorMove(actuator2,-12);
+  
+  actuator1.actuator.writeMicroseconds(1000);
+  actuator2.actuator.writeMicroseconds(1000);
+  delay(10000);
+  actuator1.actuator.writeMicroseconds(1500);
+  actuator2.actuator.writeMicroseconds(1500);
+  actuator1.pos = 0;
   actuator2.pos = 0;
 
   Motor1.attach(10);
@@ -110,14 +116,17 @@ void loop() {
       //Serial.println("Stopping...");
       if(dig == 1){
         dig = 2;
-        // move actuators as needed
-      } else if(dig == 2){
-        dig = 3; 
-        //move actuators as needed
+        actuatorMove(actuator1, 3);
+        actuatorMove(actuator2, 3);
+        Motor_Move(spd,spd);
+        actuatorMove(actuator1, 6);
+        actuatorMove(actuator2, 6);
       } else{
         dig = 1; 
+        actuatorMove(actuator1, 2);
+        actuatorMove(actuator2, 2);
         //move actuators as needed
-      }
+      } 
 
     }
      else if (command.equalsIgnoreCase("stop") || command.equalsIgnoreCase("none")) {
