@@ -9,11 +9,11 @@ class Actuator { // The class keyword defines a class named Car
 };
 
 Actuator actuator1;
-//Actuator actuator2;
+Actuator actuator2;
 Servo Motor1;
-//Servo Motor2;
-//Servo Motor3;
-//Servo Motor4;
+Servo Motor2;
+Servo Motor3;
+Servo Motor4;
 
 
 int spd = 500;
@@ -58,8 +58,9 @@ void Motor_Move(int leftSpd, int rightSpd){
   rightSpd += 1500;
   leftSpd += 1500;
   Motor1.writeMicroseconds(leftSpd);
-  //Motor2.writeMicroseconds(rightSpd);
-  
+  Motor2.writeMicroseconds(leftSpd);
+  Motor3.writeMicroseconds(rightSpd);
+  Motor4.writeMicroseconds(rightSpd);
 }
 
 void setup() {
