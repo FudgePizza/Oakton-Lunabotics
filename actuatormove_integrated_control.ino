@@ -25,7 +25,7 @@ float pulsesPerIn = 441.9;
 void actuatorMove(Actuator &act, float pos){ 
   float dis = pos - act.pos;
   int direction = (dis > 0) ? 1 : -1;
-  int aSpd = (constrain(spd, -500,500))* (direction);
+  int aSpd = -(constrain(spd, -500,500))* (direction);
   aSpd += 1500;
   stepCount = 0;
   long pulsesNeeded = (long)(fabs(dis)*pulsesPerIn); 
@@ -70,24 +70,29 @@ void setup() {
   pinMode(actuator1.pin,INPUT); // Hall effect sensor of Actuator 1
   actuator1.actuator.attach(12);
   
- 
+  Motor1.attach(10);
+  Motor2.attach(9);
+  Motor3.attach(8);
+  Motor4.attach(7);
+
+  Motor1.writeMicroseconds(1500);
+  Motor2.writeMicroseconds(1500);
+  Motor3.writeMicroseconds(1500);
+  Motor4.writeMicroseconds(1500);
 
   actuator2.pin = 3;
   pinMode(actuator2.pin,INPUT); // Hall effect sensor of Actuator 2
   actuator2.actuator.attach(11);
   
-  actuator1.actuator.writeMicroseconds(1000);
-  actuator2.actuator.writeMicroseconds(1000);
+  actuator1.actuator.writeMicroseconds(2000);
+  actuator2.actuator.writeMicroseconds(2000);
   delay(10000);
   actuator1.actuator.writeMicroseconds(1500);
   actuator2.actuator.writeMicroseconds(1500);
   actuator1.pos = 0;
   actuator2.pos = 0;
 
-  Motor1.attach(10);
-  Motor2.attach(9);
-  Motor3.attach(8);
-  Motor4.attach(7);
+  
 }
 
 void loop() {
