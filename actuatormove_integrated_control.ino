@@ -85,9 +85,9 @@ void setup() {
   actuator2.pos = 0;
 
   Motor1.attach(10);
-  //Motor2.attach(9);
-  //Motor3.attach(8);
-  //Motor4.attach(7);
+  Motor2.attach(9);
+  Motor3.attach(8);
+  Motor4.attach(7);
 }
 
 void loop() {
