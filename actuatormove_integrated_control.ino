@@ -25,7 +25,7 @@ int dig = 1;
 
 float pulsesPerIn = 441.9;
 
-void actuatorMove(Actuator &act, float pos){ 
+void actuatorSet(Actuator &act, float pos){ 
   float dis = pos - act.pos;
   int direction = (dis > 0) ? 1 : -1;
   int aSpd = -(constrain(spd, -500,500))* (direction);
@@ -34,7 +34,7 @@ void actuatorMove(Actuator &act, float pos){
   long pulsesNeeded = (long)(fabs(dis)*pulsesPerIn); 
   attachInterrupt(digitalPinToInterrupt(act.pin),
                 (&act == &actuator1) ? countSteps1 : countSteps2,
-                RISING);
+                RISING);                       
   unsigned long start = millis();
   act.actuator.writeMicroseconds(aSpd);
   while(true){
@@ -49,7 +49,40 @@ void actuatorMove(Actuator &act, float pos){
     
   }
   act.pos += direction* ((float)act.stepCount/pulsesPerIn);
+  act.actuator.writeMicroseconds(1500 - direction*200);
+  delay(40);
   act.actuator.writeMicroseconds(1500);
+  detachInterrupt(digitalPinToInterrupt(act.pin));
+} 
+
+void actuatorDig(Actuator &act, int mSpd, int aSpd){ 
+  
+  int direction = (aSpd > 0) ? 1 : -1;
+  aSpd = -(constrain(aSpd, -500,500));
+  aSpd += 1500;
+  act.stepCount = 0;
+   
+  attachInterrupt(digitalPinToInterrupt(act.pin),
+                (&act == &actuator1) ? countSteps1 : countSteps2,
+                RISING);
+  unsigned long start = millis();
+  act.actuator.writeMicroseconds(aSpd);
+  Motor_Move(mSpd,mSpd);
+  while(true){
+    noInterrupts();
+    long steps = act.stepCount;
+    interrupts();
+
+    if (millis() - start > 15000) break;
+    
+    delayMicroseconds(100);
+    
+  }
+  act.pos += direction* ((float)act.stepCount/pulsesPerIn);
+  act.actuator.writeMicroseconds(1500 - direction*200);
+  delay(40);
+  act.actuator.writeMicroseconds(1500);
+  Motor_Move(0,0);
   detachInterrupt(digitalPinToInterrupt(act.pin));
 } 
 
@@ -72,6 +105,10 @@ void setup() {
   actuator1.pin = 2;
   pinMode(actuator1.pin,INPUT); // Hall effect sensor of Actuator 1
   actuator1.actuator.attach(12);
+
+  actuator2.pin = 3;
+  pinMode(actuator2.pin,INPUT); // Hall effect sensor of Actuator 2
+  actuator2.actuator.attach(11);
   
   Motor1.attach(10);
   Motor2.attach(9);
@@ -82,10 +119,6 @@ void setup() {
   Motor2.writeMicroseconds(1500);
   Motor3.writeMicroseconds(1500);
   Motor4.writeMicroseconds(1500);
-
-  actuator2.pin = 3;
-  pinMode(actuator2.pin,INPUT); // Hall effect sensor of Actuator 2
-  actuator2.actuator.attach(11);
   
   actuator1.actuator.writeMicroseconds(2000);
   actuator2.actuator.writeMicroseconds(2000);
@@ -125,15 +158,9 @@ void loop() {
       //Serial.println("Stopping...");
       if(dig == 1){
         dig = 2;
-        actuatorMove(actuator1, 3);
-        actuatorMove(actuator2, 3);
-        Motor_Move(spd,spd);
-        actuatorMove(actuator1, 6);
-        actuatorMove(actuator2, 6);
+        actuatorDig(actuator1, 250, 500);
       } else{
         dig = 1; 
-        actuatorMove(actuator1, 2);
-        actuatorMove(actuator2, 2);
         //move actuators as needed
       } 
 
