@@ -1,11 +1,12 @@
 #include <Servo.h>
 #include <math.h>
 
-class Actuator { // The class keyword defines a class named Car
-  public:    // Access specifier - members are accessible from outside the class
+class Actuator { 
+  public:    // 
     Servo actuator;
     float pos;
     int pin;
+    volatile long stepCount = 0;
 };
 
 Actuator actuator1;
@@ -15,11 +16,13 @@ Servo Motor2;
 Servo Motor3;
 Servo Motor4;
 
+void countSteps1() { actuator1.stepCount++; }
+void countSteps2() { actuator2.stepCount++; }
 
 int spd = 500;
-float spdOfActuator = 0.05; //in/s
+
 int dig = 1; 
-volatile long stepCount = 0;
+
 float pulsesPerIn = 441.9;
 
 void actuatorMove(Actuator &act, float pos){ 
@@ -27,14 +30,16 @@ void actuatorMove(Actuator &act, float pos){
   int direction = (dis > 0) ? 1 : -1;
   int aSpd = -(constrain(spd, -500,500))* (direction);
   aSpd += 1500;
-  stepCount = 0;
+  act.stepCount = 0;
   long pulsesNeeded = (long)(fabs(dis)*pulsesPerIn); 
-  attachInterrupt(digitalPinToInterrupt(act.pin), countSteps, RISING);
+  attachInterrupt(digitalPinToInterrupt(act.pin),
+                (&act == &actuator1) ? countSteps1 : countSteps2,
+                RISING);
   unsigned long start = millis();
   act.actuator.writeMicroseconds(aSpd);
   while(true){
     noInterrupts();
-    long steps = stepCount;
+    long steps = act.stepCount;
     interrupts();
 
     if (steps >= pulsesNeeded) break;
@@ -43,14 +48,12 @@ void actuatorMove(Actuator &act, float pos){
     delayMicroseconds(100);
     
   }
-  act.pos += direction* (stepCount/pulsesPerIn);
+  act.pos += direction* ((float)act.stepCount/pulsesPerIn);
   act.actuator.writeMicroseconds(1500);
   detachInterrupt(digitalPinToInterrupt(act.pin));
 } 
 
-void countSteps() {
-  stepCount++;
-}
+
 
 void Motor_Move(int leftSpd, int rightSpd){
   rightSpd = constrain(rightSpd, -500,500);
