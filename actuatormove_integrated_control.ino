@@ -28,7 +28,7 @@ float pulsesPerIn = 441.9;
 void actuatorSet(Actuator &act, float pos){ 
   float dis = pos - act.pos;
   int direction = (dis > 0) ? 1 : -1;
-  int aSpd = -(constrain(spd, -500,500))* (direction);
+  int aSpd = (constrain(spd, -500,500))* (direction);
   aSpd += 1500;
   act.stepCount = 0;
   long pulsesNeeded = (long)(fabs(dis)*pulsesPerIn); 
@@ -49,7 +49,7 @@ void actuatorSet(Actuator &act, float pos){
     
   }
   act.pos += direction* ((float)act.stepCount/pulsesPerIn);
-  act.actuator.writeMicroseconds(1500 - direction*200);
+  act.actuator.writeMicroseconds(1500 + direction*200);
   delay(40);
   act.actuator.writeMicroseconds(1500);
   detachInterrupt(digitalPinToInterrupt(act.pin));
@@ -58,7 +58,7 @@ void actuatorSet(Actuator &act, float pos){
 void actuatorDig(Actuator &act, int mSpd, int aSpd){ 
   
   int direction = (aSpd > 0) ? 1 : -1;
-  aSpd = -(constrain(aSpd, -500,500));
+  aSpd = (constrain(aSpd, -500,500));
   aSpd += 1500;
   act.stepCount = 0;
    
@@ -79,7 +79,7 @@ void actuatorDig(Actuator &act, int mSpd, int aSpd){
     
   }
   act.pos += direction* ((float)act.stepCount/pulsesPerIn);
-  act.actuator.writeMicroseconds(1500 - direction*200);
+  act.actuator.writeMicroseconds(1500 + direction*200);
   delay(40);
   act.actuator.writeMicroseconds(1500);
   Motor_Move(0,0);
