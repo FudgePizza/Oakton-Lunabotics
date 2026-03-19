@@ -1,0 +1,312 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/Rubber.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/RoughPolymer.proto"
+IMPORTABLE EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/UnevenTerrain.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/SandyGround.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/devices/slamtec/protos/RpLidarA2.proto"
+
+WorldInfo {
+  contactProperties [
+    ContactProperties {
+      material1 "Regolith_MAT"
+      material2 "Wheel_MAT"
+      coulombFriction [
+        0.08
+      ]
+      forceDependentSlip [
+        0.0005
+      ]
+    }
+  ]
+}
+Viewpoint {
+  orientation 0.6723973783295699 -0.4163349791656035 -0.6120024107294824 4.161643531284103
+  position -2.9293865799674945 -1.6723526607369545 13.627058510269896
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  translation 0 0 -0.8
+  floorSize 7.14 4.57
+  floorTileSize 1 1
+  floorAppearance SandyGround {
+  }
+  wallHeight 1
+}
+Robot {
+  translation -3 -1.5 0
+  children [
+    RpLidarA2 {
+      name "lidar"
+    }
+    InertialUnit {
+    }
+    GPS {
+    }
+    Accelerometer {
+      name "Camera_Accelerometer"
+    }
+    Solid {
+      translation 0.485 0 0.035
+      children [
+        InertialUnit {
+          name "IMU"
+        }
+        Camera {
+          translation 0.015 0 0
+          width 192
+          height 108
+        }
+        RangeFinder {
+          translation 0.015 0 0
+          name "ZED_Cam"
+          recognitionColors [
+            0 0 0
+          ]
+          fieldOfView 1.57
+          width 192
+          height 108
+          maxRange 10
+        }
+        Shape {
+          appearance PBRAppearance {
+            baseColor 1 0 0
+          }
+          geometry Box {
+            size 0.03 0.2 0.03
+          }
+        }
+      ]
+      name "Stereo_Camera"
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        position 0.20496314018577497
+        axis 0 1 0
+        anchor 0.3 0.29 -0.05
+      }
+      device [
+        RotationalMotor {
+          name "Front_Left_Motor"
+          maxTorque 25
+        }
+        PositionSensor {
+          name "Front_Left_Position_Sensor"
+        }
+      ]
+      endPoint Solid {
+        translation 0.3001093503358637 0.28971357781804263 -0.05003762388044374
+        rotation 0.9895888622108112 0.10176255180346626 -0.10177557093310169 1.581302950197877
+        children [
+          DEF Front_Left_Wheel Shape {
+            appearance Rubber {
+            }
+            geometry Cylinder {
+              height 0.15
+              radius 0.15
+            }
+          }
+        ]
+        name "Front_Left_Wheel"
+        contactMaterial "Wheel_MAT"
+        boundingObject USE Front_Left_Wheel
+        physics DEF Physics_Front_Left_Wheel Physics {
+        }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        position 0.20549901402837933
+        axis 0 1 0
+        anchor 0.3 -0.29 -0.05
+      }
+      device [
+        RotationalMotor {
+          name "Front_Right_Motor"
+          minPosition -1000000
+          maxPosition 1000000
+          maxTorque 25
+        }
+        PositionSensor {
+          name "Front_Right_Position_Sensor"
+        }
+      ]
+      endPoint Solid {
+        translation 0.2999095964669396 -0.29019905148018754 -0.04939123723408713
+        rotation 0.9895345706265595 0.1020163173842162 -0.10204902999183028 1.5813331754152729
+        children [
+          DEF Front_Right_Wheel Shape {
+            appearance Rubber {
+            }
+            geometry Cylinder {
+              height 0.15
+              radius 0.15
+            }
+          }
+        ]
+        name "Front_Right_Wheel"
+        contactMaterial "Wheel_MAT"
+        boundingObject USE Front_Right_Wheel
+        physics DEF Physics_Front_Right_Wheel Physics {
+        }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        position 0.20079903514083064
+        axis 0 1 0
+        anchor -0.3 0.29 -0.05
+      }
+      device [
+        RotationalMotor {
+          name "Rear_Left_Motor"
+          minPosition -1000000
+          maxPosition 1000000
+          maxTorque 25
+        }
+        PositionSensor {
+          name "Rear_Left_Position_Sensor"
+        }
+      ]
+      endPoint Solid {
+        translation -0.29952902932166425 0.29022202089677873 -0.04950254108227543
+        rotation 0.9900035594128809 0.0997198760318367 -0.09974416611522477 1.5808265169134859
+        children [
+          DEF Rear_Left_Wheel Shape {
+            appearance Rubber {
+            }
+            geometry Cylinder {
+              height 0.15
+              radius 0.15
+            }
+          }
+        ]
+        name "Rear_Left_Wheel"
+        contactMaterial "Wheel_MAT"
+        boundingObject USE Rear_Left_Wheel
+        physics DEF Physics_Rear_Left_Wheel Physics {
+        }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        position 0.20141957514566167
+        axis 0 1 0
+        anchor -0.3 -0.29 -0.05
+      }
+      device [
+        RotationalMotor {
+          name "Rear_Right_Motor"
+          minPosition -1000000
+          maxPosition 1000000
+          maxTorque 25
+        }
+        PositionSensor {
+          name "Right_Rear_Position_Sensor"
+        }
+      ]
+      endPoint Solid {
+        translation -0.3001308161309321 -0.28973942275119335 -0.04989375315052905
+        rotation 0.9899420063444203 0.10003049610493682 -0.10004361010971233 1.580869612548634
+        children [
+          DEF Rear_Right_Wheel Shape {
+            appearance Rubber {
+            }
+            geometry Cylinder {
+              height 0.15
+              radius 0.15
+            }
+          }
+        ]
+        name "Rear_Right_Wheel"
+        contactMaterial "Wheel_MAT"
+        boundingObject USE Rear_Right_Wheel
+        physics DEF Physics_Rear_Right_Wheel Physics {
+        }
+      }
+    }
+    DEF Frame Shape {
+      appearance PBRAppearance {
+        baseColor 0.423529 0.423529 0.423529
+      }
+      geometry Box {
+        size 1 0.43 0.04
+      }
+    }
+  ]
+  boundingObject USE Frame
+  physics Physics {
+    density -1
+    mass 45
+  }
+  controller "Webots_Test_1_Controller"
+}
+Solid {
+  translation -2.42199 8.85202e-16 -0.675953
+  children [
+    DEF Rock_1 Shape {
+      appearance RoughPolymer {
+      }
+      geometry Sphere {
+        radius 0.3
+      }
+    }
+  ]
+  name "rock"
+  boundingObject USE Rock_1
+}
+Solid {
+  translation 0.70801 -1.45 -0.785953
+  children [
+    DEF Rock_1 Shape {
+      appearance RoughPolymer {
+      }
+      geometry Sphere {
+        radius 0.3
+      }
+    }
+  ]
+  name "rock(1)"
+  boundingObject USE Rock_1
+}
+Solid {
+  translation -0.14199 0.94 -0.745953
+  children [
+    DEF Rock_1 Shape {
+      appearance RoughPolymer {
+      }
+      geometry Sphere {
+        radius 0.3
+      }
+    }
+  ]
+  name "rock(2)"
+  boundingObject USE Rock_1
+}
+Solid {
+  translation -3.56 -2.36 -0.75
+  children [
+    DEF Ground Shape {
+      appearance SandyGround {
+      }
+      geometry ElevationGrid {
+        height [
+          0, 0.05, 0, 0.05, 0, 0.05, 0, 0.05, 0.02, 0, 0.02, 0, 0.02, 0, 0.02, 0, 0, 0.04, 0, 0.04, 0, 0.04, 0, 0.04, 0.01, 0, 0.01, 0, 0.01, 0, 0.01, 0, 0, 0.03, 0, 0.03, 0, 0.03, 0, 0.03
+        ]
+        xDimension 8
+        xSpacing 1.02
+        yDimension 5
+        ySpacing 1.1425
+      }
+    }
+  ]
+  name "Ground"
+  contactMaterial "Regolith_MAT"
+  boundingObject USE Ground
+}
