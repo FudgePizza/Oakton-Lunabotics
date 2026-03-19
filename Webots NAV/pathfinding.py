@@ -1,3 +1,4 @@
+# todo: fix obstacle avoidance
 import math
 import odometry
 import lidar_processing
