@@ -1,3 +1,4 @@
+# todo: fix rock detection, make sure walls are not marked as rocks
 import math
 import odometry
 
