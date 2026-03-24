@@ -1,27 +1,16 @@
-# Webots_Test_1_Controller.py
-# Main controller for autonomous navigation.
-# Coordinates odometry, LiDAR processing, pathfinding, and visualization.
-# Controls: SPACE=Start | G=Screenshot | W/A/S/D=Manual
-
 from controller import Robot
 import math
 import os
 
-try:
-    import numpy as np
-    NUMPY_AVAILABLE = True
-except ImportError:
-    NUMPY_AVAILABLE = False
-
 import odometry
 import mapping
 import lidar_processing
+import costmap
 import pathfinding
 
-# Device names 
-LIDAR_NAME       = "lidar"
-IMU_NAME         = "inertial unit"
-RANGEFINDER_NAME = "ZED_Cam"
+# Device names
+LIDAR_NAME = "lidar"
+IMU_NAME   = "inertial unit"
 
 MOTOR_NAMES = {
     'FL': "Front_Left_Motor",
@@ -49,7 +38,7 @@ timestep = int(robot.getBasicTimeStep())
 dt       = timestep / 1000.0
 
 print("=" * 60)
-print(f"  Lunabotics VFH Controller | dt: {dt}s")
+print(f"  Lunabotics 3D LiDAR Controller | dt: {dt}s")
 print("=" * 60)
 
 motors = {}
@@ -92,61 +81,25 @@ try:
 except Exception as e:
     print(f"[ERROR] LiDAR: {e}")
 
-range_finder = None
-rf_ok = False
-rf_width = rf_height = 0
-try:
-    range_finder = robot.getDevice(RANGEFINDER_NAME)
-    range_finder.enable(timestep)
-    rf_width  = range_finder.getWidth()
-    rf_height = range_finder.getHeight()
-    rf_ok = True
-    print(f"[OK] RangeFinder '{RANGEFINDER_NAME}' ({rf_width}x{rf_height})")
-except Exception as e:
-    print(f"[WARNING] RangeFinder: {e}")
-
 keyboard = robot.getKeyboard()
 keyboard.enable(timestep)
 
 
-# Module init
+# Module initialization
 
 odometry.setup(encoders_ok=encoders_ok, imu_ok=imu_ok,
                start_x=ROBOT_START_X, start_y=ROBOT_START_Y)
 mapping.setup(script_dir=SCRIPT_DIR, goal_x=GOAL_X, goal_y=GOAL_Y)
 if lidar_ok:
     lidar_processing.setup(lidar)
+costmap.setup()
 pathfinding.setup(goal_x=GOAL_X, goal_y=GOAL_Y)
 
 print(f"[OK] Start: ({ROBOT_START_X}, {ROBOT_START_Y}) | "
       f"Goal: ({GOAL_X}, {GOAL_Y})")
-print(f"[OK] LiDAR: {'ACTIVE' if lidar_ok else 'DISABLED'} | "
-      f"Depth: {'ACTIVE' if rf_ok else 'DISABLED'}")
-print("Controls: SPACE=Start | G=Screenshot | W/A/S/D=Manual")
+print(f"[OK] LiDAR: {'ACTIVE' if lidar_ok else 'DISABLED'}")
+print("Controls: SPACE=Start | W/A/S/D=Manual")
 print("=" * 60)
-
-
-# Helpers
-
-def get_depth_front_distance():
-    """Min valid distance in the center strip of the depth image."""
-    if not rf_ok or not NUMPY_AVAILABLE:
-        return float('inf')
-    depth_data = range_finder.getRangeImage()
-    if depth_data is None:
-        return float('inf')
-
-    arr = np.array(depth_data, dtype=np.float32).reshape((rf_height, rf_width))
-    row_lo = int(rf_height * 0.30)
-    row_hi = int(rf_height * 0.80)
-    col_lo = int(rf_width * 0.35)
-    col_hi = int(rf_width * 0.65)
-    center = arr[row_lo:row_hi, col_lo:col_hi]
-
-    valid = center[(center > 0.1) & (center < 8.0) & np.isfinite(center)]
-    if len(valid) == 0:
-        return float('inf')
-    return float(np.min(valid))
 
 
 def set_motors(left, right):
@@ -179,7 +132,8 @@ while robot.step(timestep) != -1:
         cloud = lidar.getPointCloud()
         lidar_processing.update(cloud)
 
-    pathfinding.set_depth_front(get_depth_front_distance())
+    # Update costmap from latest LiDAR obstacle points
+    costmap.update()
 
     mapping.update()
 
@@ -226,6 +180,8 @@ dist = math.sqrt((GOAL_X - rx)**2 + (GOAL_Y - ry)**2)
 print(f"Distance: {dist:.3f}m")
 lms = lidar_processing.get_landmarks()
 print(f"Rock landmarks: {len(lms)}")
+known = pathfinding.get_known_obstacles()
+print(f"Detected obstacles: {len(known)}")
 print("=" * 60)
 
 if mapping.viz:
