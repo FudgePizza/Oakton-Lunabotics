@@ -21,7 +21,7 @@ for _backend in ['Qt5Agg', 'TkAgg', 'wxAgg', 'Agg']:
 if not MATPLOTLIB_AVAILABLE:
     print("[WARNING] matplotlib not available")
 
-VIZ_UPDATE_INTERVAL = 10
+VIZ_UPDATE_INTERVAL = 15
 SHOW_VISUALIZATION  = True
 
 _goal_x = 5.0
@@ -33,10 +33,11 @@ _script_dir = os.path.dirname(os.path.abspath(__file__))
 
 _lidar_mod = None
 _path_mod  = None
+_costmap_mod = None
 
 
 def _lazy_imports():
-    global _lidar_mod, _path_mod
+    global _lidar_mod, _path_mod, _costmap_mod
     if _lidar_mod is None:
         try:
             import lidar_processing
@@ -47,6 +48,12 @@ def _lazy_imports():
         try:
             import pathfinding
             _path_mod = pathfinding
+        except ImportError:
+            pass
+    if _costmap_mod is None:
+        try:
+            import costmap as cm
+            _costmap_mod = cm
         except ImportError:
             pass
 
@@ -62,13 +69,16 @@ class PointCloudVisualizer:
         self._goal_y = goal_y
 
         self._traj_line = None
-        self._scan_scatter = None
+        self._ground_scatter = None
         self._obs_scatter = None
         self._landmark_scatter = None
         self._robot_dot = None
         self._robot_arrow = None
         self._goal_dot = None
         self._steer_line = None
+        self._obstacle_circles = []
+        self._wp_dots = None
+        self._costmap_img = None
 
         if MATPLOTLIB_AVAILABLE:
             try:
@@ -80,7 +90,7 @@ class PointCloudVisualizer:
         plt.ion()
         self.fig, self.ax = plt.subplots(figsize=(10, 8))
         try:
-            self.fig.canvas.manager.set_window_title('Lunabotics - Point Cloud')
+            self.fig.canvas.manager.set_window_title('Lunabotics - 3D Point Cloud')
         except AttributeError:
             pass
 
@@ -97,8 +107,8 @@ class PointCloudVisualizer:
                                         markersize=15, zorder=10, label='Goal')
         self._traj_line, = self.ax.plot([], [], 'b-', linewidth=1,
                                          alpha=0.4, zorder=3, label='Trajectory')
-        self._scan_scatter = self.ax.scatter([], [], s=2, c='lightgray',
-                                              zorder=4, label='Ground')
+        self._ground_scatter = self.ax.scatter([], [], s=2, c='lightgray',
+                                                zorder=4, label='Ground')
         self._obs_scatter = self.ax.scatter([], [], s=8, c='black',
                                              zorder=5, label='Obstacle')
         self._landmark_scatter = self.ax.scatter([], [], s=60, c='red',
@@ -112,6 +122,8 @@ class PointCloudVisualizer:
                                               zorder=11)
         self._steer_line, = self.ax.plot([], [], 'g-', linewidth=2,
                                           alpha=0.8, zorder=7, label='Steer')
+        self._wp_dots, = self.ax.plot([], [], 'mx', markersize=8,
+                                       zorder=7, label='Waypoints')
 
         self.ax.legend(loc='upper right', fontsize=8)
         plt.tight_layout()
@@ -124,6 +136,18 @@ class PointCloudVisualizer:
         backend_name = matplotlib.get_backend().lower()
         self._agg_only = ('agg' in backend_name and 'qt' not in backend_name
                           and 'tk' not in backend_name and 'wx' not in backend_name)
+
+    def _update_obstacle_circles(self, obstacles):
+        from matplotlib.patches import Circle
+        for c in self._obstacle_circles:
+            c.remove()
+        self._obstacle_circles = []
+        for obs in obstacles:
+            circ = Circle((obs['x'], obs['y']), obs['radius'],
+                          fill=False, edgecolor='orange', linewidth=2,
+                          linestyle='--', zorder=6)
+            self.ax.add_patch(circ)
+            self._obstacle_circles.append(circ)
 
     def update(self, rx, ry, rh, title=""):
         if not MATPLOTLIB_AVAILABLE or self.ax is None:
@@ -143,22 +167,26 @@ class PointCloudVisualizer:
             if _lidar_mod:
                 scan = _lidar_mod.get_scan_world()
                 if scan:
-                    ground_x = [p[0] for p in scan if p[2]]
-                    ground_y = [p[1] for p in scan if p[2]]
-                    obs_x = [p[0] for p in scan if not p[2]]
-                    obs_y = [p[1] for p in scan if not p[2]]
+                    # Downsample for display performance
+                    step = max(1, len(scan) // 800)
+                    sampled = scan[::step]
+
+                    ground_x = [p[0] for p in sampled if p[2] == 'ground']
+                    ground_y = [p[1] for p in sampled if p[2] == 'ground']
+                    obs_x = [p[0] for p in sampled if p[2] == 'obstacle']
+                    obs_y = [p[1] for p in sampled if p[2] == 'obstacle']
 
                     if ground_x:
-                        self._scan_scatter.set_offsets(list(zip(ground_x, ground_y)))
+                        self._ground_scatter.set_offsets(list(zip(ground_x, ground_y)))
                     else:
-                        self._scan_scatter.set_offsets([(float('nan'), float('nan'))])
+                        self._ground_scatter.set_offsets([(float('nan'), float('nan'))])
 
                     if obs_x:
                         self._obs_scatter.set_offsets(list(zip(obs_x, obs_y)))
                     else:
                         self._obs_scatter.set_offsets([(float('nan'), float('nan'))])
                 else:
-                    self._scan_scatter.set_offsets([(float('nan'), float('nan'))])
+                    self._ground_scatter.set_offsets([(float('nan'), float('nan'))])
                     self._obs_scatter.set_offsets([(float('nan'), float('nan'))])
 
                 lms = _lidar_mod.get_landmarks()
@@ -170,9 +198,41 @@ class PointCloudVisualizer:
 
             if _path_mod:
                 path = _path_mod.get_path()
-                if path and len(path) == 2:
-                    self._steer_line.set_data([path[0][0], path[1][0]],
-                                               [path[0][1], path[1][1]])
+                if path and len(path) >= 2:
+                    self._steer_line.set_data([p[0] for p in path],
+                                               [p[1] for p in path])
+                else:
+                    self._steer_line.set_data([], [])
+
+                known = _path_mod.get_known_obstacles()
+                self._update_obstacle_circles(known)
+
+                if hasattr(_path_mod, '_avoid_waypoints') and _path_mod._avoid_waypoints:
+                    wp_x = [w[0] for w in _path_mod._avoid_waypoints]
+                    wp_y = [w[1] for w in _path_mod._avoid_waypoints]
+                    self._wp_dots.set_data(wp_x, wp_y)
+                else:
+                    self._wp_dots.set_data([], [])
+
+            # Costmap overlay
+            if _costmap_mod:
+                grid = _costmap_mod.get_grid()
+                if grid is not None:
+                    params = _costmap_mod.get_grid_params()
+                    extent = [
+                        params['origin_x'],
+                        params['origin_x'] + params['width'] * params['resolution'],
+                        params['origin_y'],
+                        params['origin_y'] + params['height'] * params['resolution'],
+                    ]
+                    if self._costmap_img is None:
+                        import numpy as np
+                        self._costmap_img = self.ax.imshow(
+                            grid, origin='lower', extent=extent,
+                            cmap='Reds', alpha=0.3, vmin=0, vmax=100,
+                            zorder=1, interpolation='nearest')
+                    else:
+                        self._costmap_img.set_data(grid)
 
             if title:
                 self.ax.set_title(title)
