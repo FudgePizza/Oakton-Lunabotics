@@ -19,22 +19,22 @@ GOAL_TOLERANCE = 0.20           # meters, stop when this close to goal
 
 # --- Turning ---
 HEADING_TOLERANCE  = math.radians(15)   # below this, switch from TURN to DRIVE
-TURN_COMMIT_ANGLE  = math.radians(30)   # above this heading error while driving → stop and turn
-TURN_SPEED_FACTOR  = 0.60               # fraction of MAX_ANGULAR for in-place turns
+TURN_COMMIT_ANGLE  = math.radians(30)   # above this heading error while driving, stop and turn
+TURN_SPEED_FACTOR  = 0.45               # fraction of MAX_ANGULAR for in-place turns
 TURN_P_GAIN        = 3.0                # proportional gain for turn speed (clamped)
 
 # --- Driving ---
-DRIVE_SPEED        = 0.30               # m/s forward speed (slow and controlled)
-DRIVE_SPEED_NEAR   = 0.15               # m/s when close to goal (< 0.8 m)
+DRIVE_SPEED        = 0.20
+DRIVE_SPEED_NEAR   = 0.10               # m/s when close to goal (< 0.8 m)
 STEER_P_GAIN       = 2.5                # proportional steering correction while driving
 SLOW_ZONE          = 0.80               # meters, slow down when this close to goal
 
 # --- Pure pursuit ---
-LOOKAHEAD_BASE     = 0.50               # minimum lookahead distance (metres)
+LOOKAHEAD_BASE     = 0.50               # minimum lookahead distance (meters)
 LOOKAHEAD_SCALE    = 0.3                # lookahead grows with speed: base + scale * v
 
 # --- Obstacle reaction ---
-OBSTACLE_STOP_DIST  = 0.70              # front LiDAR distance, stop (metres)
+OBSTACLE_STOP_DIST  = 0.70              # front LiDAR distance, stop (meters)
 OBSTACLE_SLOW_DIST  = 1.30              # front LiDAR distance, slow down
 BACKUP_SPEED        = -0.30             # m/s during backup 
 BACKUP_DURATION     = 25                # steps to back up (~0.8 s at 32 ms/step)
@@ -44,7 +44,7 @@ REPLAN_INTERVAL     = 90                # steps between scheduled replans
 MIN_REPLAN_COOLDOWN = 30                # minimum steps between ANY two replans
 WAYPOINT_SPACING    = 3                 # keep every Nth A* cell (path thinning)
 WAYPOINT_REACH_DIST = 0.35             # meters advance to next waypoint
-ASTAR_BLOCKED_COST  = 45                # lowered: A* avoids inflated cells harder
+ASTAR_BLOCKED_COST  = 45                
 
 # --- Stuck detection ---
 STUCK_STEPS         = 150               # steps without progress,  force replan
@@ -268,16 +268,17 @@ def _maybe_replan(rx, ry, step):
     if not cooldown_ok:
         return
 
+    is_stuck = _check_stuck(rx, ry)
     needs_replan = (
         len(_global_path) == 0
         or (step - _last_replan_step) >= REPLAN_INTERVAL
         or _is_path_blocked()
-        or _check_stuck(rx, ry)
+        or is_stuck
     )
 
     if needs_replan:
         reason = ("init"    if len(_global_path) == 0 else
-                  "stuck"   if _check_stuck(rx, ry)   else
+                  "stuck"   if is_stuck               else
                   "blocked" if _is_path_blocked()      else
                   "periodic")
         _do_replan(rx, ry, step, reason)
@@ -452,7 +453,7 @@ def _smooth_path(path):
     weight_smooth = 0.3
     weight_data   = 0.5
 
-    for _ in range(30):  # iterations
+    for _ in range(10):  # iterations (reduced from 30 for speed)
         for i in range(1, len(smoothed) - 1):
             ox, oy = smoothed[i]
             # Pull toward original
@@ -490,10 +491,6 @@ def _to_wheel_speeds(v, omega):
 
 
 # public getters
-
-def get_known_obstacles():
-    return []
-
 
 def get_path():
     """Return remaining waypoints for visualization."""
