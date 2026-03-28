@@ -21,7 +21,7 @@ for _backend in ['Qt5Agg', 'TkAgg', 'wxAgg', 'Agg']:
 if not MATPLOTLIB_AVAILABLE:
     print("[WARNING] matplotlib not available")
 
-VIZ_UPDATE_INTERVAL = 15
+VIZ_UPDATE_INTERVAL = 30
 SHOW_VISUALIZATION  = True
 
 _goal_x = 5.0
@@ -76,7 +76,6 @@ class PointCloudVisualizer:
         self._robot_arrow = None
         self._goal_dot = None
         self._steer_line = None
-        self._obstacle_circles = []
         self._wp_dots = None
         self._costmap_img = None
 
@@ -90,17 +89,17 @@ class PointCloudVisualizer:
         plt.ion()
         self.fig, self.ax = plt.subplots(figsize=(10, 8))
         try:
-            self.fig.canvas.manager.set_window_title('Lunabotics - 3D Point Cloud')
+            self.fig.canvas.manager.set_window_title('Map')
         except AttributeError:
             pass
 
-        self.ax.set_xlim(-1, 11)
-        self.ax.set_ylim(-1, 11)
+        self.ax.set_xlim(-0.5, 8)
+        self.ax.set_ylim(-0.5, 6)
         self.ax.set_aspect('equal')
         self.ax.set_xlabel('X (m)')
         self.ax.set_ylabel('Y (m)')
-        self.ax.set_xticks(range(-1, 12))
-        self.ax.set_yticks(range(-1, 12))
+        self.ax.set_xticks(range(0, 9))
+        self.ax.set_yticks(range(0, 7))
         self.ax.grid(True, alpha=0.3)
 
         self._goal_dot, = self.ax.plot([self._goal_x], [self._goal_y], 'g*',
@@ -136,18 +135,6 @@ class PointCloudVisualizer:
         backend_name = matplotlib.get_backend().lower()
         self._agg_only = ('agg' in backend_name and 'qt' not in backend_name
                           and 'tk' not in backend_name and 'wx' not in backend_name)
-
-    def _update_obstacle_circles(self, obstacles):
-        from matplotlib.patches import Circle
-        for c in self._obstacle_circles:
-            c.remove()
-        self._obstacle_circles = []
-        for obs in obstacles:
-            circ = Circle((obs['x'], obs['y']), obs['radius'],
-                          fill=False, edgecolor='orange', linewidth=2,
-                          linestyle='--', zorder=6)
-            self.ax.add_patch(circ)
-            self._obstacle_circles.append(circ)
 
     def update(self, rx, ry, rh, title=""):
         if not MATPLOTLIB_AVAILABLE or self.ax is None:
@@ -204,15 +191,7 @@ class PointCloudVisualizer:
                 else:
                     self._steer_line.set_data([], [])
 
-                known = _path_mod.get_known_obstacles()
-                self._update_obstacle_circles(known)
-
-                if hasattr(_path_mod, '_avoid_waypoints') and _path_mod._avoid_waypoints:
-                    wp_x = [w[0] for w in _path_mod._avoid_waypoints]
-                    wp_y = [w[1] for w in _path_mod._avoid_waypoints]
-                    self._wp_dots.set_data(wp_x, wp_y)
-                else:
-                    self._wp_dots.set_data([], [])
+                self._wp_dots.set_data([], [])
 
             # Costmap overlay
             if _costmap_mod:
@@ -283,11 +262,3 @@ def update():
         if _path_mod:
             title = _path_mod.get_status()
         viz.update(rx, ry, rh, title)
-
-
-def get_grid():
-    return None
-
-
-def save_final():
-    pass
