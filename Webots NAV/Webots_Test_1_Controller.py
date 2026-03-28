@@ -19,8 +19,8 @@ MOTOR_NAMES = {
     'RR': "Rear_Right_Motor",
 }
 
-DRIVE_SPEED = 2.0
-TURN_SPEED  = 1.5
+MANUAL_DRIVE_SPEED = 1.5
+TURN_SPEED         = 1.125
 
 ROBOT_START_X = 0.6
 ROBOT_START_Y = 0.8
@@ -36,10 +36,6 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 robot    = Robot()
 timestep = int(robot.getBasicTimeStep())
 dt       = timestep / 1000.0
-
-print("=" * 60)
-print(f"  Lunabotics 3D LiDAR Controller | dt: {dt}s")
-print("=" * 60)
 
 motors = {}
 for key, name in MOTOR_NAMES.items():
@@ -146,10 +142,10 @@ while robot.step(timestep) != -1:
             autonomous_started = True
     elif key == ord('W'):
         manual_override = True
-        set_motors(DRIVE_SPEED, DRIVE_SPEED)
+        set_motors(MANUAL_DRIVE_SPEED, MANUAL_DRIVE_SPEED)
     elif key == ord('S'):
         manual_override = True
-        set_motors(-DRIVE_SPEED, -DRIVE_SPEED)
+        set_motors(-MANUAL_DRIVE_SPEED, -MANUAL_DRIVE_SPEED)
     elif key == ord('A'):
         manual_override = True
         set_motors(-TURN_SPEED, TURN_SPEED)
