@@ -70,7 +70,7 @@ _last_any_replan_step = -MIN_REPLAN_COOLDOWN
 _steps_since_progress = 0
 _last_progress_pos    = (0.0, 0.0)
 
-# Backup manoeuvre
+# Backup maneuver
 _backup_counter = 0
 
 # For visualization / status
