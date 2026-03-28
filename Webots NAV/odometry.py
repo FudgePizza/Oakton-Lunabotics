@@ -4,7 +4,7 @@ START_X = 0.6
 START_Y = 0.8
 
 _WHEEL_RADIUS = 0.15
-_WHEEL_BASE   = 0.5
+_WHEEL_BASE   = 0.58
 
 x = 0.0
 y = 0.0
@@ -42,9 +42,9 @@ def update(fl, fr, rl, rr, yaw, dt):
         _prev_RL, _prev_RR = rl, rr
         return
 
-    omega_left  = ((fl - _prev_FL) + (rl - _prev_RL)) / (2.0 * dt)
-    omega_right = ((fr - _prev_FR) + (rr - _prev_RR)) / (2.0 * dt)
-    v_forward = (omega_left + omega_right) / 2.0 * _WHEEL_RADIUS
+    enc_vel_left  = ((fl - _prev_FL) + (rl - _prev_RL)) / (2.0 * dt)
+    enc_vel_right = ((fr - _prev_FR) + (rr - _prev_RR)) / (2.0 * dt)
+    v_forward = (enc_vel_left + enc_vel_right) / 2.0 * _WHEEL_RADIUS
 
     heading = yaw
     x += v_forward * math.cos(heading) * dt
