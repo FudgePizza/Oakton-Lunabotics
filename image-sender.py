@@ -68,9 +68,7 @@ def main():
                 imgsize = len(data_bytes) / (1024 * 1024)
                 print(f'Encoded image size: {imgsize:.4f} mbytes')
                 total_size += imgsize
-
-                # Send image size first (fixed 4 bytes for size)
-                conn.sendall(len(data_bytes).to_bytes(4, byteorder='big'))
+                i += 1
 
                 # Send image over socket
                 conn.sendall(data_bytes + MARKER)  # Append marker to indicate end of image data
