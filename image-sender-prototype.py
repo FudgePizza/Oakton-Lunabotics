@@ -37,61 +37,79 @@ def compress_image(img, quality):
 def main():
     total_size = 0.0
     i=0
-
-    # set up webcam and video writer
+    # set up webcam
     cap = cv2.VideoCapture(0)
-    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    if not cap.isOpened():
+        raise RuntimeError("Cannot open webcam (index=0)")
+
+    # read first frame to determine sizes and initialize writer
+    ret, frame = cap.read()
+    if not ret or frame is None:
+        cap.release()
+        raise RuntimeError("Failed to read initial frame from webcam")
+
+    frame_height, frame_width = frame.shape[:2]
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter('output.mp4', fourcc, 20.0, (frame_width // 2, frame_height // 2))
+    target_size = (frame_width // 2, frame_height // 2)
+    out = cv2.VideoWriter('output.mp4', fourcc, 20.0, target_size)
 
     start = time.time()
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            raise RuntimeError("Failed to read frame from webcam")
+    try:
+        while True:
+            # use the already-read frame for first iteration
+            if i == 0:
+                current_frame = frame
+            else:
+                ret, current_frame = cap.read()
+                if not ret or current_frame is None:
+                    break
 
-        # Compresss frame
-        frame = compress_image(frame, quality=5)
+            # Compress frame
+            compressed = compress_image(current_frame, quality=5)
 
-        # Encode to bytes
-        data_bytes = encode_image_to_bytes(frame, fmt='.jpg')
-        imgsize = len(data_bytes) / (1024 * 1024)
-        print(f'Encoded image size: {imgsize:.4f} mbytes')
-        total_size += imgsize
+            # Encode to bytes
+            data_bytes = encode_image_to_bytes(compressed, fmt='.jpg')
+            imgsize = len(data_bytes) / (1024 * 1024)
+            print(f'Encoded image size: {imgsize:.4f} mbytes')
+            total_size += imgsize
 
-        # Decode back to image
-        reconstructed = decode_bytes_to_image(data_bytes)
+            # Decode back to image
+            reconstructed = decode_bytes_to_image(data_bytes)
 
-        # Ensure the frame matches the VideoWriter size then write
-        target_size = (frame_width // 2, frame_height // 2)
-        if reconstructed is None:
-            raise RuntimeError("Reconstructed frame is None")
-        if (reconstructed.shape[1], reconstructed.shape[0]) != target_size:
-            reconstructed = cv2.resize(reconstructed, target_size)
-        out.write(reconstructed)
+            # Ensure the frame matches the VideoWriter size then write
+            if reconstructed is None:
+                raise RuntimeError("Reconstructed frame is None")
+            if (reconstructed.shape[1], reconstructed.shape[0]) != target_size:
+                reconstructed = cv2.resize(reconstructed, target_size)
+            out.write(reconstructed)
 
-        # Show reconstructed image (larger display but without increasing quality)
-        display_scale = 2
-        display_size = (target_size[0] * display_scale, target_size[1] * display_scale)
-        display_img = cv2.resize(reconstructed, display_size, interpolation=cv2.INTER_NEAREST)
-        cv2.imshow('reconstructed', display_img)
+            # show the reconstructed frame
+            cv2.imshow('Reconstructed', reconstructed)
 
-        i+=1
-        if cv2.waitKey(1) == ord('q'):
-            break
-        if i >= 500:
-            break
+            i += 1
+            if i >= 10:
+                break
+    except KeyboardInterrupt:
+        pass
     end = time.time()
 
+    # release resources
     out.release()
     cap.release()
-    cv2.destroyAllWindows()
-    print(f'Average: {total_size * 8 / i:.4f} mbytes')
-    print(f'Total: {total_size * 8:.4f} mbytes')
-    print(f'Time taken: {end - start:.4f} seconds')
-    print(f'Mbps: {(total_size * 8) / (end - start):.4f} Mbps')
-    print(f'FPS: {i / (end - start):.4f} FPS')
+
+    if i == 0:
+        print('No frames processed')
+        return
+
+    # total_size is in megabytes; convert to megabits for network throughput numbers
+    total_megabits = total_size * 8
+    avg_megabits_per_frame = total_megabits / i
+    duration = end - start
+    print(f'Average per frame: {avg_megabits_per_frame:.6f} megabits')
+    print(f'Total: {total_megabits:.6f} megabits')
+    print(f'Time taken: {duration:.4f} seconds')
+    print(f'Mbps: {total_megabits / duration:.4f} Mbps')
+    print(f'FPS: {i / duration:.4f} FPS')
 
 
 if __name__ == '__main__':
