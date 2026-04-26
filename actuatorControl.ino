@@ -34,7 +34,7 @@ void setup() {
   pinMode(actuator2.pin,INPUT_PULLUP); // Hall effect sensor of Actuator 2
   actuator2.actuator.attach(11);// SM OUT Actuator 2 (Tilt)
   
-  actuator1.actuator.writeMicroseconds(1000);
+  actuator1.actuator.writeMicroseconds(2000);
   actuator2.actuator.writeMicroseconds(1000);
   delay(20000);
   actuator1.actuator.writeMicroseconds(1500);
@@ -55,11 +55,11 @@ void loop() {
     if (command.equalsIgnoreCase("u1")) {
       
       direction1 = 1;
-      actuator1.actuator.writeMicroseconds(2000);
+      actuator1.actuator.writeMicroseconds(1000);
     } else if (command.equalsIgnoreCase("d1")) {
       
       direction1 = -1;
-      actuator1.actuator.writeMicroseconds(1000);
+      actuator1.actuator.writeMicroseconds(2000);
     } else if (command.equalsIgnoreCase("u2")&& actuator2.pos <= 8.0) {
         direction2 = 1;
         actuator2.actuator.writeMicroseconds(2000);
