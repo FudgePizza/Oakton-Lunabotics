@@ -16,7 +16,7 @@ int direction2 = 0;
 void countSteps1() { actuator1.stepCount+= 1*direction1; }
 void countSteps2() { actuator2.stepCount+= 1*direction2; }
 
-int spd = 500;
+int spd = 350;
 
 int dig = 1; 
 
@@ -47,6 +47,8 @@ void setup() {
 
 void loop() {
   // Check if there’s data in the serial buffer
+  static unsigned long lastPrint = 0;
+
   if (Serial.available() > 0) {
     
     String command = Serial.readStringUntil('\n');  // Read until newline
@@ -72,26 +74,39 @@ void loop() {
       
 
     }
-     else if (command.equalsIgnoreCase("stop") || command.equalsIgnoreCase("none")) {
+     else if (command.equalsIgnoreCase("stop1") || command.equalsIgnoreCase("none")) {
+      actuator1.actuator.writeMicroseconds(1500);
+      direction1 = 0;
+    }
+    else if (command.equalsIgnoreCase("stop2") || command.equalsIgnoreCase("none")) {
+     
+      actuator2.actuator.writeMicroseconds(1500);
+      direction2 = 0;
+    }
+    else if (command.equalsIgnoreCase("stop") || command.equalsIgnoreCase("none")) {
       actuator1.actuator.writeMicroseconds(1500);
       actuator2.actuator.writeMicroseconds(1500);
     }
     
      else { 
-      actuator1.actuator.writeMicroseconds(1500);
-      actuator2.actuator.writeMicroseconds(1500);
+      //actuator1.actuator.writeMicroseconds(1500);
+      //actuator2.actuator.writeMicroseconds(1500);
       
     }
     
     
-  }
+  }  
   noInterrupts();
   long steps1 = actuator1.stepCount;
   long steps2 = actuator2.stepCount;
   actuator1.pos = steps1 / pulsesPerIn;
   actuator2.pos = steps2 / pulsesPerIn;
-  Serial.print(actuator1.pos);
-  Serial.print(",");
-  Serial.println(actuator2.pos);
   interrupts();
+
+  if (millis() - lastPrint >= 50) {   // 20 Hz
+    lastPrint = millis();
+    Serial.print(actuator1.pos);
+    Serial.print(",");
+    Serial.println(actuator2.pos);
+  }
 }
