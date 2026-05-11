@@ -36,6 +36,7 @@ def compress_image(img, quality):
 
 def main():
     total_size = 0.0
+    maxbandwidth = 0.0
     i=0
 
     # set up webcam
@@ -52,8 +53,13 @@ def main():
         print(f"Server listening on {HOST}:{PORT}")
         conn, addr = s.accept()
 
+        
+
         with conn:
             print(f"Connected by {addr}")
+        
+        
+            oldrqst = b'-1'
             start = time.time()
             while True:
                 ret, frame = cap.read()
@@ -61,20 +67,26 @@ def main():
                     raise RuntimeError("Failed to read frame from webcam")
 
                 # Compresss frame
-                frame = compress_image(frame, quality=5)
+                frame = compress_image(frame, quality=10) # quality in %
 
                 # Encode to bytes
                 data_bytes = encode_image_to_bytes(frame, fmt='.jpg')
-                imgsize = len(data_bytes) / (1024 * 1024)
-                print(f'Encoded image size: {imgsize:.4f} mbytes')
+                # Calculate size and bandwidth
+                imgsize = len(data_bytes) * 8 / (1024 * 1024) # in Mbits
                 total_size += imgsize
+                bandwidth = total_size / (time.time() - start)
+                maxbandwidth = max(bandwidth, maxbandwidth)
+                print(f'Encoded image size: {imgsize:.4f} Mbits     Average bandwidth: {bandwidth:.4f} Mbps     Highest bandwidth: {maxbandwidth:.4f} Mbps     Time: ' + str(time.time() - start))
                 i += 1
-
+                
                 # Send image over socket
                 conn.sendall(data_bytes + MARKER)  # Append marker to indicate end of image data
+                time.sleep(0.05) # pause for 0.05 seconds before capturing and sending again
                 
                 if cv2.waitKey(1) == ord('q'):
                     break
+                
+                    
         
     end = time.time()
 
