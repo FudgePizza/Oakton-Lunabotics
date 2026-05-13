@@ -11,15 +11,17 @@ def decode_bytes_to_image(image_bytes):
 def main():
 
     # set up video writer
-    frame_width = 1280
-    frame_height = 960
+    frame_width = 960
+    frame_height = 720
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter('output.mp4', fourcc, 20.0, (frame_width // 2, frame_height // 2))
+    out1 = cv2.VideoWriter('output.mp4', fourcc, 20.0, (frame_width, frame_height))
+    out2 = cv2.VideoWriter('output.mp4', fourcc, 20.0, (frame_width, frame_height))
 
     HOST = "192.168.0.15"  # IPv4 Address of server computer
     PORT = 65432  # Port to listen on (non-privileged ports are > 1023)
     # Markers to indicate the end of each image data
-    MARKER = b'IMG_END'
+    MARKER1 = b'IMG1_END'
+    MARKER2 = b'IMG2_END'
 
     print("Waiting for connection...")
 
@@ -51,43 +53,39 @@ def main():
                 buffer += data
 
                 # only proceed if there's at least one complete frame
-                if MARKER not in buffer:
+                if MARKER1 not in buffer or MARKER2 not in buffer:
                     continue
                 
-                # Split off all incomplete frames, leave the incomplete tail in the buffer
-                parts = buffer.split(MARKER)
-                buffer = parts[-1] # parts[-1] is always the incomplete remainder (could be empy b"")
+                # Find indexes of markers
+                m1_idx = buffer.find(MARKER1)
+                m2_idx = buffer.find(MARKER2, m1_idx + len(MARKER1))
 
-                # if no complete frames, end loop iteration and go again
-                complete_frames = parts[:-1] # All other parts are complete image chunks
-                if not complete_frames:
-                    continue
+                # Use indexes to update buffers
+                img1_data = buffer[:m1_idx]
+                img2_data = buffer[m1_idx + len(MARKER1):m2_idx]
+                buffer = buffer[m2_idx + len(MARKER2):]
 
-                # Try to decode from newest to oldest, use first one that succeeds, ignore the rest
-                latest_img = None
-                latest_img_data = None
-                for img_data in reversed(complete_frames):
-                    if len(img_data) == 0:
-                        continue
-                    img = decode_bytes_to_image(img_data)
-                    if img is not None:
-                        latest_img = img
-                        latest_img_data = img_data
-                        break
+                img1 = decode_bytes_to_image(img1_data) if len(img1_data) > 0 else None
+                img2 = decode_bytes_to_image(img2_data) if len(img2_data) > 0 else None
                 
                 # ensure proper video frame sizing
                 target_size = (frame_width, frame_height)
-                if (latest_img.shape[1], latest_img.shape[0]) != target_size:
-                    latest_img = cv2.resize(latest_img, target_size)
+                if (img1.shape[1], img1.shape[0]) != target_size:
+                    img1 = cv2.resize(img1, target_size)
+                if (img2.shape[1], img2.shape[0]) != target_size:
+                    img2 = cv2.resize(img2, target_size)
                 
                 # display frame and write to video
-                out.write(latest_img)
-                cv2.imshow('Received', latest_img)
+                out1.write(img1)
+                out2.write(img2)
+                cv2.imshow('Camera 1', img1)
+                cv2.imshow('Camera 2', img2)
+
 
                 frame_count += 1
                 if start_time == 0:
                     start_time = time.time()
-                imgsize = len(latest_img_data) * 8/ (1024 * 1024) # in Mbits
+                imgsize = (len(img1_data)+len(img2_data)) * 8/ (1024 * 1024) # in Mbits
                 total_size += imgsize
                 total_time = time.time() - start_time
                 bandwidth = (total_size) / total_time  # in Mbps
@@ -99,7 +97,8 @@ def main():
                     break
         finally:
             # Clean up cv2 resources
-            out.release()
+            out1.release()
+            out2.release()
             cv2.destroyAllWindows()
 
             print("\nConnection closed.")
