@@ -81,7 +81,7 @@ def main():
                 
                 # Send image over socket
                 conn.sendall(data_bytes + MARKER)  # Append marker to indicate end of image data
-                time.sleep(0.05) # pause for 0.05 seconds before capturing and sending again
+                #time.sleep(0.05) # pause for 0.05 seconds before capturing and sending again
                 
                 if cv2.waitKey(1) == ord('q'):
                     break
