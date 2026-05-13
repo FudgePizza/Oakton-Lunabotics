@@ -17,7 +17,7 @@ def main():
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter('output.mp4', fourcc, 20.0, (frame_width // 2, frame_height // 2))
 
-    HOST = "192.168.0.64"  # IPv4 Address of server computer
+    HOST = "192.168.1.29"  # IPv4 Address of server computer
     PORT = 65432  # Port to listen on (non-privileged ports are > 1023)
     MARKER = b'IMG_END'  # Marker to indicate end of image data
 
