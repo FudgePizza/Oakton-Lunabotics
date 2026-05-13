@@ -39,38 +39,65 @@ def main():
         while True:
             #  get data from socket in chunks and append to buffer until we have a complete image
             data = c.recv(262144)
-            if not data:
+            #c.settimeout(0.5)  # set a timeout to prevent hanging if the server stops sending data
+            try:
+                data = c.recv(262144)
+            except socket.timeout:
+                data = b"" # no data yet, keep waiting
+
+
+            if data and len(data) == 0:
                 print("Connection closed by server")
                 break
             buffer += data
 
-            while MARKER in buffer:
-                img_data, buffer = buffer.split(MARKER, 1)
-                img = decode_bytes_to_image(img_data)
-                if img is None:
-                    print("Failed to decode image")
+            # only proceed if there's at least one complete frame
+            if MARKER not in buffer:
+                continue
+            
+            # Split off all incomplete frames, leave the incomplete tail in the buffer
+            parts = buffer.split(MARKER)
+            buffer = parts[-1] # parts[-1] is always the incomplete remainder (could be empy b"")
+
+            # if no complete frames, end loop iteration and go again
+            complete_frames = parts[:-1] # All other parts are complete image chunks
+            if not complete_frames:
+                continue
+
+            # Try to decode from newest to oldest, use first one that succeeds, ignore the rest
+            latest_img = None
+            latest_img_data = None
+            for img_data in reversed(complete_frames):
+                if len(img_data) == 0:
                     continue
-
-                target_size = (frame_width, frame_height)
-
-                if (img.shape[1], img.shape[0]) != target_size:
-                    img = cv2.resize(img, target_size)
-                out.write(img)
-                cv2.imshow('Received', img)
-
-                frame_count += 1
-                if start_time == 0:
-                    start_time = time.time()
-                imgsize = len(img_data) * 8/ (1024 * 1024) # in Mbits
-                total_size += imgsize
-                total_time = time.time() - start_time
-                bandwidth = (total_size) / total_time  # in Mbps
-                maxbandwidth = max(maxbandwidth, bandwidth)
-                fps = frame_count / total_time
-                print(f"img size: {imgsize:.4f} Mbits    fps (total): {fps:.4f} fps")
-                
-                if cv2.waitKey(1) == ord('q'):
+                img = decode_bytes_to_image(img_data)
+                if img is not None:
+                    latest_img = img
+                    latest_img_data = img_data
                     break
+            
+            # ensure proper video frame sizing
+            target_size = (frame_width, frame_height)
+            if (latest_img.shape[1], latest_img.shape[0]) != target_size:
+                latest_img = cv2.resize(latest_img, target_size)
+            
+            # display frame and write to video
+            out.write(latest_img)
+            cv2.imshow('Received', latest_img)
+
+            frame_count += 1
+            if start_time == 0:
+                start_time = time.time()
+            imgsize = len(latest_img_data) * 8/ (1024 * 1024) # in Mbits
+            total_size += imgsize
+            total_time = time.time() - start_time
+            bandwidth = (total_size) / total_time  # in Mbps
+            maxbandwidth = max(maxbandwidth, bandwidth)
+            fps = frame_count / total_time
+            print(f"img size: {imgsize:.4f} Mbits    fps (total): {fps:.4f} fps    bandwidth (total): {bandwidth:.4f} Mbps    max bandwidth: {maxbandwidth:.4f} Mbps")
+            
+            if cv2.waitKey(1) == ord('q'):
+                break
                     
 
     out.release()
