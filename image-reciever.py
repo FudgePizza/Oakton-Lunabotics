@@ -38,7 +38,6 @@ def main():
 
         while True:
             #  get data from socket in chunks and append to buffer until we have a complete image
-            data = c.recv(262144)
             #c.settimeout(0.5)  # set a timeout to prevent hanging if the server stops sending data
             try:
                 data = c.recv(262144)
