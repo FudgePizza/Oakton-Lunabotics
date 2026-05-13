@@ -33,19 +33,24 @@ def compress_image(img, quality):
     decoded_img = cv2.imdecode(buf, cv2.IMREAD_COLOR)
     return decoded_img
 
-
+# Code will likely fail if any of the cameras are not working/plugged in
 def main():
     total_size = 0.0
     maxbandwidth = 0.0
     i=0
 
     # set up webcam
-    cap = cv2.VideoCapture(0)
+    cap1 = cv2.VideoCapture(4)
+    cap2 = cv2.VideoCapture(6)
+    quality = 10 # video compression quality in %
 
     # set up socket server
     HOST = "0.0.0.0" # Listen on all LAN interfaces
     PORT = 65432  # Port to listen on (non-privileged ports are > 1023)
-    MARKER = b'IMG_END'  # Marker to indicate end of image data
+
+    # Markers to indicate end of each image data
+    MARKER1 = b'IMG1_END'
+    MARKER2 = b'IMG2_END'
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT))
@@ -61,42 +66,53 @@ def main():
         
             oldrqst = b'-1'
             start = time.time()
-            while True:
-                ret, frame = cap.read()
-                if not ret:
-                    raise RuntimeError("Failed to read frame from webcam")
+            try:
+                while True:
+                    ret1, frame1 = cap1.read()
+                    ret2, frame2 = cap2.read()
+                    if not ret1 or not ret2:
+                        raise RuntimeError("Failed to read frame from one or more cameras")
 
-                # Compresss frame
-                frame = compress_image(frame, quality=10) # quality in %
+                    # Compresss frame
+                    frame1 = compress_image(frame1, quality=quality)
+                    frame2 = compress_image(frame2, quality=quality)
 
-                # Encode to bytes
-                data_bytes = encode_image_to_bytes(frame, fmt='.jpg')
-                # Calculate size and bandwidth
-                imgsize = len(data_bytes) * 8 / (1024 * 1024) # in Mbits
-                total_size += imgsize
-                bandwidth = total_size / (time.time() - start)
-                maxbandwidth = max(bandwidth, maxbandwidth)
-                print(f'Encoded image size: {imgsize:.4f} Mbits     Average bandwidth: {bandwidth:.4f} Mbps     Highest bandwidth: {maxbandwidth:.4f} Mbps     Time: ' + str(time.time() - start))
-                i += 1
-                
-                # Send image over socket
-                conn.sendall(data_bytes + MARKER)  # Append marker to indicate end of image data
-                #time.sleep(0.05) # pause for 0.05 seconds before capturing and sending again
-                
-                if cv2.waitKey(1) == ord('q'):
-                    break
-                
+                    # Encode to bytes
+                    data_bytes1 = encode_image_to_bytes(frame1, fmt='.jpg')
+                    data_bytes2 = encode_image_to_bytes(frame2, fmt='.jpg')
+
+                    # Calculate size and bandwidth
+                    imgsize = (len(data_bytes1) + len(data_bytes2)) * 8 / (1024 * 1024) # in Mbits
+                    total_size += imgsize
+                    bandwidth = total_size / (time.time() - start)
+                    maxbandwidth = max(bandwidth, maxbandwidth)
+                    print(f'Encoded image sizes: {imgsize:.4f} Mbits     Average bandwidth: {bandwidth:.4f} Mbps     Highest bandwidth: {maxbandwidth:.4f} Mbps     Time: ' + str(time.time() - start))
+                    i += 1
                     
-        
-    end = time.time()
+                    # Send image over socket
+                    conn.sendall(data_bytes1 + MARKER1)  # Append marker to indicate end of image data
+                    conn.sendall(data_bytes2 + MARKER2)
+                    #time.sleep(0.05) # pause for 0.05 seconds before capturing and sending again
+                    
+                    if cv2.waitKey(1) == ord('q'):
+                        break
+            finally:
+                # Clean up socket connection
+                conn.close()
+                s.close()
 
-    cap.release()
-    cv2.destroyAllWindows()
-    print(f'Average: {total_size * 8 / i:.4f} mbytes')
-    print(f'Total: {total_size * 8:.4f} mbytes')
-    print(f'Time taken: {end - start:.4f} seconds')
-    print(f'Mbps: {(total_size * 8) / (end - start):.4f} Mbps')
-    print(f'FPS: {i / (end - start):.4f} FPS')
+                # Clean up cv2 resources
+                cap1.release()
+                cap2.release()
+                cv2.destroyAllWindows()
+
+                # Print final statistics
+                end = time.time()
+                print(f'Average: {total_size * 8 / i:.4f} mbytes')
+                print(f'Total: {total_size * 8:.4f} mbytes')
+                print(f'Time taken: {end - start:.4f} seconds')
+                print(f'Mbps: {(total_size * 8) / (end - start):.4f} Mbps')
+                print(f'FPS: {i / (end - start):.4f} FPS')
 
 
 if __name__ == '__main__':
